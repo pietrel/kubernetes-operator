@@ -51,8 +51,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	staticPageName := "webui-" + req.Name
 
 	var staticPage pietrelv1.WebUi
-	err := r.Client.Get(ctx, req.NamespacedName, &staticPage)
-	if err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &staticPage); err != nil {
 		if k8serrors.IsNotFound(err) { // webui not found, we can delete the resources
 			err = deploymentsClient.Delete(ctx, staticPageName, metav1.DeleteOptions{})
 			if err != nil {
@@ -157,6 +156,7 @@ func main() {
 
 }
 
+// getDeploymentObject returns a deployment object with the given name, image and replicas
 func getDeploymentObject(name string, image string, replicas int) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
@@ -211,6 +211,7 @@ func getDeploymentObject(name string, image string, replicas int) *appsv1.Deploy
 	}
 }
 
+// getConfigMapObject returns a configmap object with the given name and contents
 func getConfigMapObject(name, contents string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -226,4 +227,5 @@ func getConfigMapObject(name, contents string) *corev1.ConfigMap {
 	}
 }
 
+// int32Ptr returns a pointer to the given int32
 func int32Ptr(i int32) *int32 { return &i }
