@@ -1,18 +1,14 @@
 # Kubernetes Operator
 
+First step to write kubernetes operator without using operator-sdk or kubebuilder.
+
 ## Build
 
 first build the docker image
 ```
 docker build -t webui-controller .
 ```
-then save the image and load it into minikube
-```
-docker image save -o webui-controller.tar webui-controller
-minikube image load webui-controller.tar
-rm webui-controller.tar
-```
-or in one command
+then load image to minikube
 ```
 minikube image load webui-controller
 ```
