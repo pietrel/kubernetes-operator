@@ -21,13 +21,10 @@ import (
 	"k8s.io/client-go/util/homedir"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = runtime.NewScheme()
 )
 
 func init() {
@@ -41,10 +38,7 @@ type reconciler struct {
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx).WithValues("webui", req.NamespacedName)
-	logger.Info("reconciling webui")
 
-	// create deployment if not exists
 	deploymentsClient := r.kubeClient.AppsV1().Deployments(req.Namespace)
 	cmClient := r.kubeClient.CoreV1().ConfigMaps(req.Namespace)
 
@@ -81,7 +75,6 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				return ctrl.Result{}, fmt.Errorf("couldn't create deployment: %s", err)
 			}
 
-			logger.Info("new webui with name " + staticPageName + " created")
 			return ctrl.Result{}, nil
 		} else {
 			return ctrl.Result{}, fmt.Errorf("deployment get error: %s", err)
@@ -89,16 +82,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	// deployment is found, let's see if we need to update it
 	if int(*deployment.Spec.Replicas) != staticPage.Spec.Replicas {
-		deployment.Spec.Replicas = int32Ptr(int32(staticPage.Spec.Replicas))
+		deployment.Spec.Replicas = &[]int32{int32(staticPage.Spec.Replicas)}[0]
 		_, err := deploymentsClient.Update(ctx, deployment, metav1.UpdateOptions{})
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("couldn't update deployment: %s", err)
 		}
-		logger.Info("webui with name " + staticPageName + " updated")
 		return ctrl.Result{}, nil
 	}
-
-	logger.Info("webui " + staticPageName + " is up-to-date")
 
 	return ctrl.Result{}, nil
 }
@@ -126,13 +116,10 @@ func main() {
 		panic(err.Error())
 	}
 
-	ctrl.SetLogger(zap.New())
-
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme: scheme,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
@@ -144,13 +131,10 @@ func main() {
 			kubeClient: clientset,
 		})
 	if err != nil {
-		setupLog.Error(err, "unable to create controller")
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "error running manager")
 		os.Exit(1)
 	}
 
@@ -161,7 +145,7 @@ func getDeploymentObject(name string, image string, replicas int) *appsv1.Deploy
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: int32Ptr(int32(replicas)),
+			Replicas: &[]int32{int32(replicas)}[0],
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": "webui",
@@ -226,6 +210,3 @@ func getConfigMapObject(name, contents string) *corev1.ConfigMap {
 		},
 	}
 }
-
-// int32Ptr returns a pointer to the given int32
-func int32Ptr(i int32) *int32 { return &i }
