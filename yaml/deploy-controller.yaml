@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webui-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webui-controller
+  template:
+    metadata:
+      labels:
+        app: webui-controller
+    spec:
+      serviceAccountName: webui-controller
+      containers:
+      - name: webui-controller
+        image: webui-controller
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http-port
+          containerPort: 8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: webui-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: webui-controller
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: webui-controller
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: webui-controller
+  namespace: default
+roleRef:
+  kind: Role
+  name: webui-controller
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: webui-controller
+rules:
+- apiGroups: ["kubernetes.pietrel.com"]
+  resources: ["webuis"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: webui-controller
+subjects:
+- kind: ServiceAccount
+  name: webui-controller
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: webui-controller
+  apiGroup: rbac.authorization.k8s.io

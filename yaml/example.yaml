@@ -1,0 +1,9 @@
+apiVersion: kubernetes.pietrel.com/v1
+kind: WebUi
+metadata:
+  name: testpage
+  namespace: default
+spec:
+  image: nginx:latest
+  contents: small first step
+  replicas: 1
